@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grocery Store Simulator</title>
+    <style>
+        body {
+            font-family: 'Courier New', monospace;
+            background-color: #1a1a1a;
+            color: #00ff00;
+            margin: 0;
+            padding: 20px;
+            line-height: 1.4;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1, h2 {
+            color: #ffff00;
+            text-shadow: 0 0 5px #ffff00;
+        }
+
+        .game-section {
+            background-color: #2a2a2a;
+            border: 2px solid #00ff00;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 15px 0;
+        }
+
+        .stat-card {
+            background-color: #333;
+            padding: 10px;
+            border-radius: 5px;
+            border-left: 4px solid #00ff00;
+        }
+
+        .department-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+        }
+
+        .department-card {
+            background-color: #333;
+            padding: 15px;
+            border-radius: 5px;
+            border: 1px solid #555;
+        }
+
+        input, button, select {
+            background-color: #444;
+            color: #00ff00;
+            border: 1px solid #666;
+            padding: 8px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+        }
+
+        button {
+            background-color: #555;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        button:hover {
+            background-color: #666;
+        }
+
+        .end-day-btn {
+            background-color: #ff4444;
+            color: white;
+            font-size: 18px;
+            padding: 12px 24px;
+            margin: 20px 0;
+        }
+
+        .end-day-btn:hover {
+            background-color: #ff6666;
+        }
+
+        .sales-log {
+            background-color: #1a1a1a;
+            padding: 15px;
+            border-radius: 5px;
+            max-height: 300px;
+            overflow-y: auto;
+            font-size: 12px;
+            border: 1px solid #444;
+        }
+
+        .success { color: #00ff00; }
+        .warning { color: #ffff00; }
+        .error { color: #ff4444; }
+
+        .cashier-section {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .reputation-bar {
+            width: 200px;
+            height: 20px;
+            background-color: #333;
+            border: 1px solid #666;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .reputation-fill {
+            height: 100%;
+            background: linear-gradient(to right, #ff4444, #ffff00, #00ff00);
+            transition: width 0.3s ease;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>🏪 GROCERY STORE SIMULATOR</h1>
+
+    <div class="game-section">
+        <h2>📊 Store Statistics</h2>
+        <div class="stats-grid">
+            <div class="stat-card">
+                <strong>💰 Cash:</strong> $<span id="cash">10000</span>
+            </div>
+            <div class="stat-card">
+                <strong>📅 Day:</strong> <span id="day">1</span>
+            </div>
+            <div class="stat-card">
+                <strong>👥 Cashiers:</strong> <span id="cashierCount">1</span>
+            </div>
+            <div class="stat-card">
+                <strong>⭐ Reputation:</strong>
+                <div class="reputation-bar">
+                    <div class="reputation-fill" id="reputationBar" style="width: 50%"></div>
+                </div>
+                <span id="reputation">50</span>/100
+            </div>
+        </div>
+    </div>
+
+    <div class="game-section">
+        <button class="end-day-btn" onclick="endDay()">🌙 END DAY</button>
+    </div>
+
+    <div class="game-section">
+        <h2>🏬 Department Management</h2>
+        <div class="department-grid" id="departmentGrid">
+            <!-- Departments will be populated by JavaScript -->
+        </div>
+    </div>
+
+    <div class="game-section">
+        <h2>👨‍💼 Cashier Management</h2>
+        <div class="cashier-section">
+            <button onclick="hireCashier()">Hire Cashier ($500/day)</button>
+            <button onclick="fireCashier()">Fire Cashier</button>
+            <span>Daily Wages: $<span id="dailyWages">500</span></span>
+            <span>Max Customers/Day: <span id="maxCustomers">50</span></span>
+        </div>
+    </div>
+
+
+    <div class="game-section">
+        <h2>📈 Daily Sales Log</h2>
+        <div class="sales-log" id="salesLog">
+            Game started. Begin by managing your inventory and cashiers, then end the day to see results.
+        </div>
+    </div>
+</div>
+
+<script>
+    // Game State
+    let gameState = {
+        cash: 10000,
+        day: 1,
+        reputation: 50,
+        cashiers: 1,
+        departments: {
+            produce: { stock: 100, cost: 2, margin: 1.5, weight: 25 },
+            dairy: { stock: 80, cost: 3, margin: 1.4, weight: 20 },
+            meat: { stock: 60, cost: 5, margin: 1.6, weight: 15 },
+            bakery: { stock: 40, cost: 2.5, margin: 1.5, weight: 10 },
+            frozen: { stock: 70, cost: 4, margin: 1.3, weight: 15 },
+            beverages: { stock: 90, cost: 1.5, margin: 1.7, weight: 15 }
+        }
+    };
+
+    const inventoryPurchaseAudio = new Audio("purchase.mp3");
+          inventoryPurchaseAudio.volume = 0.4;
+    const hireCashierAudio = new Audio("hire.mp3");
+          hireCashierAudio.volume = 0.4;
+    const fireCashierAudio = new Audio("fire.mp3");
+          fireCashierAudio.volume = 0.4;
+    const endDayAudio = new Audio("endDay.mp3");
+          endDayAudio.volume = 0.4;
+
+    // Initialize the game
+    function initGame() {
+        updateDisplay();
+        renderDepartments();
+    }
+
+    function updateDisplay() {
+        document.getElementById('cash').textContent = gameState.cash.toFixed(0);
+        document.getElementById('day').textContent = gameState.day;
+        document.getElementById('cashierCount').textContent = gameState.cashiers;
+        document.getElementById('reputation').textContent = gameState.reputation;
+        document.getElementById('dailyWages').textContent = gameState.cashiers * 500;
+        document.getElementById('maxCustomers').textContent = gameState.cashiers * 50;
+
+        // Update reputation bar
+        const reputationBar = document.getElementById('reputationBar');
+        reputationBar.style.width = `${gameState.reputation}%`;
+    }
+
+    function renderDepartments() {
+        const grid = document.getElementById('departmentGrid');
+        grid.innerHTML = '';
+
+        Object.entries(gameState.departments).forEach(([name, dept]) => {
+            const card = document.createElement('div');
+            card.className = 'department-card';
+            card.innerHTML = `
+                    <h3>${name.toUpperCase()}</h3>
+                    <p><strong>Stock:</strong> <span id="${name}-stock">${dept.stock}</span> units</p>
+                    <p><strong>Cost:</strong> $${dept.cost.toFixed(2)}</p>
+                    <p><strong>Margin:</strong> ${dept.margin.toFixed(2)}x</p>
+                    <p><strong>Sale Price:</strong> $${(dept.cost * dept.margin).toFixed(2)}</p>
+                    <div style="margin: 10px 0;">
+                        <input type="number" id="${name}-buy" placeholder="Units to buy" min="0" max="1000">
+                        <button onclick="buyInventory('${name}')">Buy Stock</button>
+                    </div>
+                    <div>
+                        <label>Margin: </label>
+                        <input type="number" id="${name}-margin" value="${dept.margin}" min="1.1" max="3.0" step="0.1">
+                        <button onclick="setMargin('${name}')">Update</button>
+                    </div>
+                `;
+            grid.appendChild(card);
+        });
+    }
+
+    function buyInventory(deptName) {
+        const buyInput = document.getElementById(`${deptName}-buy`);
+        const units = parseInt(buyInput.value) || 0;
+        const dept = gameState.departments[deptName];
+        const totalCost = units * dept.cost;
+
+        if (units <= 0) return;
+
+        if (gameState.cash >= totalCost) {
+            gameState.cash -= totalCost;
+            dept.stock += units;
+            buyInput.value = '';
+            updateDisplay();
+            document.getElementById(`${deptName}-stock`).textContent = dept.stock;
+            logMessage(`Purchased ${units} units of ${deptName} for $${totalCost.toFixed(2)}`, 'success');
+            //play purchase SFX
+            inventoryPurchaseAudio.currentTime = 0;
+            inventoryPurchaseAudio.play();
+        } else {
+            logMessage(`Not enough cash! Need $${totalCost.toFixed(2)}, have $${gameState.cash.toFixed(2)}`, 'error');
+        }
+    }
+
+    function setMargin(deptName) {
+        const marginInput = document.getElementById(`${deptName}-margin`);
+        const newMargin = parseFloat(marginInput.value) || 1.1;
+
+        if (newMargin >= 1.1 && newMargin <= 3.0) {
+            gameState.departments[deptName].margin = newMargin;
+            renderDepartments();
+            logMessage(`Updated ${deptName} margin to ${newMargin.toFixed(2)}x`, 'success');
+        } else {
+            logMessage('Margin must be between 1.1 and 3.0', 'error');
+        }
+    }
+
+    function hireCashier() {
+        const hireCost = 500;
+        if (gameState.cash >= hireCost && gameState.cashiers < 10) {
+            gameState.cashiers++;
+            updateDisplay();
+            logMessage('Hired a cashier for $500/day', 'success');
+            //play hiring SFX
+            hireCashierAudio.currentTime = 0;
+            hireCashierAudio.play();
+        } else if (gameState.cashiers >= 10) {
+            logMessage('Maximum 10 cashiers allowed', 'warning');
+        } else {
+            logMessage('Not enough cash to hire a cashier', 'error');
+        }
+    }
+
+    function fireCashier() {
+        if (gameState.cashiers > 1) {
+            gameState.cashiers--;
+            updateDisplay();
+            logMessage('Fired a cashier', 'warning');
+            //play firing SFX
+            fireCashierAudio.currentTime = 0;
+            fireCashierAudio.play();
+        } else {
+            logMessage('Cannot fire your last cashier', 'error');
+        }
+    }
+
+    function weightedLottery(departments) {
+        const totalWeight = Object.values(departments).reduce((sum, dept) => sum + dept.weight, 0);
+        const random = Math.random() * totalWeight;
+        let current = 0;
+
+        for (const [name, dept] of Object.entries(departments)) {
+            current += dept.weight;
+            if (random <= current) {
+                return name;
+            }
+        }
+        return Object.keys(departments)[0];
+    }
+
+    function calculateDemand() {
+        const baseCustomers = Math.floor(20 + (gameState.reputation / 100) * 80);
+        const maxCapacity = gameState.cashiers * 50;
+        return Math.min(baseCustomers + Math.floor(Math.random() * 30), maxCapacity);
+    }
+
+    function endDay() {
+        logMessage(`\n=== DAY ${gameState.day} RESULTS ===`, 'warning');
+
+        // Calculate daily expenses
+        const dailyWages = gameState.cashiers * 500;
+        gameState.cash -= dailyWages;
+        logMessage(`Daily wages paid: $${dailyWages}`, 'error');
+
+        // Calculate customer demand
+        const totalCustomers = calculateDemand();
+        logMessage(`Total customers today: ${totalCustomers}`, 'success');
+
+        let totalRevenue = 0;
+        let successfulSales = 0;
+        let failedSales = 0;
+
+        // Process each customer
+        for (let i = 0; i < totalCustomers; i++) {
+            const wantedDept = weightedLottery(gameState.departments);
+            const dept = gameState.departments[wantedDept];
+            const wantedAmount = Math.floor(Math.random() * 5) + 1;
+
+            if (dept.stock >= wantedAmount) {
+                // Successful sale
+                dept.stock -= wantedAmount;
+                const saleRevenue = wantedAmount * dept.cost * dept.margin;
+                totalRevenue += saleRevenue;
+                successfulSales++;
+
+                if (Math.random() < 0.1) { // 10% chance to log individual sales
+                    logMessage(`Customer bought ${wantedAmount} ${wantedDept} for $${saleRevenue.toFixed(2)}`, 'success');
+                }
+            } else {
+                // Failed sale - out of stock
+                failedSales++;
+                if (Math.random() < 0.2) { // 20% chance to log stockouts
+                    logMessage(`OUT OF STOCK: Customer wanted ${wantedAmount} ${wantedDept}, only had ${dept.stock}`, 'error');
+                }
+            }
+        }
+
+        // Update reputation
+        const reputationChange = (successfulSales * 0.5) - (failedSales * 1);
+        gameState.reputation = Math.max(0, Math.min(100, gameState.reputation + reputationChange));
+
+        // Add revenue to cash
+        gameState.cash += totalRevenue;
+
+        // Daily summary
+        logMessage(`\n--- DAILY SUMMARY ---`, 'warning');
+        logMessage(`Successful sales: ${successfulSales}`, 'success');
+        logMessage(`Failed sales (stockouts): ${failedSales}`, 'error');
+        logMessage(`Daily revenue: $${totalRevenue.toFixed(2)}`, 'success');
+        logMessage(`Daily expenses: $${dailyWages.toFixed(2)}`, 'error');
+        logMessage(`Net profit: $${(totalRevenue - dailyWages).toFixed(2)}`, totalRevenue > dailyWages ? 'success' : 'error');
+        logMessage(`Reputation change: ${reputationChange > 0 ? '+' : ''}${reputationChange.toFixed(1)}`, reputationChange > 0 ? 'success' : 'error');
+
+        // Check for game over conditions
+        if (gameState.cash < 0) {
+            logMessage('\n💀 GAME OVER: You ran out of money!', 'error');
+        } else if (gameState.reputation <= 0) {
+            logMessage('\n💀 GAME OVER: Your reputation is ruined!', 'error');
+        }
+
+        // Advance to next day and play end of day SFX
+
+        gameState.day++;
+        updateDisplay();
+        renderDepartments();
+        endDayAudio.currentTime = 0;
+        endDayAudio.play();
+        logMessage(`\n🌅 Day ${gameState.day} begins. Plan your strategy!`, 'warning');
+    }
+
+    function logMessage(message, type = 'success') {
+        const log = document.getElementById('salesLog');
+        const timestamp = `[${String(gameState.day).padStart(2, '0')}] `;
+        log.innerHTML += `<div class="${type}">${timestamp}${message}</div>`;
+        log.scrollTop = log.scrollHeight;
+    }
+
+    // Initialize the game when the page loads
+    initGame();
+</script>
+</body>
+</html>
