@@ -220,7 +220,7 @@
         document.getElementById('day').textContent = gameState.day;
         document.getElementById('cashierCount').textContent = gameState.cashiers;
         document.getElementById('reputation').textContent = gameState.reputation;
-        document.getElementById('dailyWages').textContent = gameState.cashiers * 500;
+        document.getElementById('dailyWages').textContent = gameState.cashiers * 125;
         document.getElementById('maxCustomers').textContent = gameState.cashiers * 50;
 
         // Update reputation bar
@@ -292,11 +292,11 @@
     }
 
     function hireCashier() {
-        const hireCost = 500;
+        const hireCost = 125;
         if (gameState.cash >= hireCost && gameState.cashiers < 10) {
             gameState.cashiers++;
             updateDisplay();
-            logMessage('Hired a cashier for $500/day', 'success');
+            logMessage('Hired a cashier for $125/day', 'success');
             //play hiring SFX
             hireCashierAudio.currentTime = 0;
             hireCashierAudio.play();
@@ -344,7 +344,7 @@
         logMessage(`\n=== DAY ${gameState.day} RESULTS ===`, 'warning');
 
         // Calculate daily expenses
-        const dailyWages = gameState.cashiers * 500;
+        const dailyWages = gameState.cashiers * 125;
         gameState.cash -= dailyWages;
         logMessage(`Daily wages paid: $${dailyWages}`, 'error');
 
